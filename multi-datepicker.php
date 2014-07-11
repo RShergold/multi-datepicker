@@ -201,7 +201,7 @@ class mdpick {
 		foreach (explode(',',$_POST['mdpicker_dates']) as $timestamp) {
 			$wpdb->insert($this->table_name, array(
 				'post_id' => $post_id,
-				'date' => date( 'Y-m-d H:i:s', $timestamp/1000 )
+				'mdpicker_date' => date( 'Y-m-d H:i:s', $timestamp/1000 )
 			));
 		}
 		
