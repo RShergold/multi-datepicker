@@ -30,7 +30,13 @@
 		<p>
 			<label>
 				<input type="checkbox" name="mdpick_custom_sort_tags" value="Y" <?php if( get_option('mdpick_custom_sort_tags') ) echo 'checked'?>>
-				<?php _e('Also sort tags & categories', 'mdpick_textdomain' ) ?>
+				<?php _e('Also sort tags', 'mdpick_textdomain' ) ?>
+			</label>	
+		</p>
+		<p>
+			<label>
+				<input type="checkbox" name="mdpick_custom_sort_categories" value="Y" <?php if( get_option('mdpick_custom_sort_categories') ) echo 'checked'?>>
+				<?php _e('Also sort categories', 'mdpick_textdomain' ) ?>
 			</label>	
 		</p>
 			

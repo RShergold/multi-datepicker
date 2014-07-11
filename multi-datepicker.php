@@ -101,16 +101,21 @@ class mdpick {
 	
 	function query_custom_group($group){
 		if (!$this->customize_next_query) return $group;
-		return (get_option('mdpick_custom_sort_tags')) ? '' : $group;
+		global $wp_query;
+		$suppress_category_grouping = (array_key_exists('category_name',$wp_query->query) && get_option('mdpick_custom_sort_categories'));
+		$suppress_tag_grouping = (array_key_exists('tag',$wp_query->query) && get_option('mdpick_custom_sort_tags'));
+		
+		return ($suppress_category_grouping || $suppress_tag_grouping) ? '' : $group;
 	}
 	
 	
 		//helper
 		function should_customize_next_query() {
-			if (!get_option('mdpick_custom_sort')) return false;
-			
-			
 			global $wp_query;
+			
+			if (!get_option('mdpick_custom_sort')) return false;
+			if (array_key_exists('category_name',$wp_query->query) && !get_option('mdpick_custom_sort_categories')) return false;
+			if (array_key_exists('tag',$wp_query->query) && !get_option('mdpick_custom_sort_tags')) return false;
 			
 			$querying_standard_posts = is_home() || (is_archive() && !is_post_type_archive());
 			$should_moify_standard_posts = get_option('mdpick_pt_post');
@@ -122,20 +127,7 @@ class mdpick {
 															|| ($querying_custom_posts && $should_modify_custom_posts);
 			
 			return $modify_this_query;
-			
-			/*
-			$querying_standard_posts = ( get_option('mdpick_pt_post') && 
-																	!array_key_exists('post_type',$wp_query->query)  && 
-																	!array_key_exists('page',$wp_query->query) );
 
-			*/
-			echo ($modify_this_query) ? "YES" : "NO";
-			echo "<pre>". print_r($wp_query, true). "</pre>";
-			return false;														
-			// TODO fix!
-			
-			$should_apply = get_option('mdpick_pt_'.$wp_query->query['post_type']) && is_archive() && !is_admin();
-			return $should_apply;
 		}
 
 	
@@ -162,7 +154,8 @@ class mdpick {
 		}
 		
 		update_option('mdpick_custom_sort', ($_POST['mdpick_custom_sort']=='Y') ? true : false); 
-		update_option('mdpick_custom_sort_tags', ($_POST['mdpick_custom_sort_tags']=='Y') ? true : false); 
+		update_option('mdpick_custom_sort_tags', ($_POST['mdpick_custom_sort_tags']=='Y') ? true : false);
+		update_option('mdpick_custom_sort_categories', ($_POST['mdpick_custom_sort_categories']=='Y') ? true : false);
 	}
 	
 	
