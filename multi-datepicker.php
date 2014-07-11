@@ -13,11 +13,17 @@ if( !class_exists('mdpick') ):
 class mdpick {
 	
 	var $all_post_types,
-		$table_name;
+		$table_name,
+		$customize_next_query;
+	
+	public $force_customize_next_query;
 		
 	function __construct() {
 		global $wpdb;
+		
 		$this->table_name = $wpdb->prefix . "mdp_multi_dates";
+		$this->customize_next_query = true;
+		$this->force_customize_next_query = false;
 		
 		if( is_admin() ) {
 			register_activation_hook( __FILE__, array( $this, 'install' ) );
@@ -25,12 +31,18 @@ class mdpick {
 			add_action('add_meta_boxes', array($this, 'add_meta_box') );
 			add_action('save_post', array($this, 'save_meta_box_post') );
 			add_action('registered_post_type', array($this, 'get_post_types') );
+		} else {
+			
+			add_action('parse_query', array($this, 'query_custom_before') );
+			add_action('posts_request', array($this, 'query_custom_after') );
+			
+			add_action('posts_fields', array($this, 'query_custom_feilds') );
+			add_action('posts_join', array($this, 'query_custom_join') );
+			add_action('posts_where', array($this, 'query_custom_where') );
+			add_action('posts_groupby', array($this, 'query_custom_group') );
+			add_action('posts_orderby', array($this, 'query_custom_order') );
+			
 		}
-		
-		add_action('posts_join', array($this, 'query_custom_join') );
-		add_action('posts_orderby', array($this, 'query_custom_order') );
-		add_action('posts_fields', array($this, 'query_custom_feilds') );
-		
 	}
 	
 	function install() {
@@ -39,7 +51,7 @@ class mdpick {
 			  post_id bigint(20) unsigned NOT NULL,
 			  mdpicker_date datetime NOT NULL,
 			  KEY post_id (post_id),
-				UNIQUE(post_id,date)
+				UNIQUE(post_id,mdpicker_date)
 			)";
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 		dbDelta( $sql );
@@ -49,28 +61,79 @@ class mdpick {
 		change wp_query for mdp affected post types
 	*/
 	
+	function query_custom_before(){
+		if ($this->force_customize_next_query)
+			$this->customize_next_query = true;
+		elseif ($this->customize_next_query)
+			$this->customize_next_query = $this->should_customize_next_query();
+	}
+	
+	function query_custom_after($q){
+		$this->customize_next_query = false;
+		$this->force_customize_next_query = false;
+		return $q;
+	}
+	
+	function query_custom_feilds($feilds){
+		if (!$this->customize_next_query) return $feilds;
+		$feilds .= ",$this->table_name.mdpicker_date";
+		return $feilds;
+	}
+	
 	function query_custom_join($join){
-		if (!$this->should_apply_custom_query()) return;
+		if (!$this->customize_next_query) return $join;
 		global $wpdb;
 		$join .= "INNER JOIN $this->table_name ON $this->table_name.post_id = $wpdb->posts.ID";
 		return $join;
 	}
 	
+	function query_custom_where($where){
+		if (!$this->customize_next_query) return $where;
+		$where .= "AND $this->table_name.mdpicker_date >= CURDATE() ";
+		return $where;
+	}
+	
 	function query_custom_order($order){
-		if (!$this->should_apply_custom_query()) return;
+		if (!$this->customize_next_query) return $order;
 		$order = "$this->table_name.mdpicker_date";
 		return $order;
 	}
 	
-	function query_custom_feilds($feilds){
-		if (!$this->should_apply_custom_query()) return;
-		$feilds .= ",$this->table_name.mdpicker_date";
-		return $feilds;
+	function query_custom_group($group){
+		if (!$this->customize_next_query) return $group;
+		return (get_option('mdpick_custom_sort_tags')) ? '' : $group;
 	}
 	
+	
 		//helper
-		function should_apply_custom_query() {
+		function should_customize_next_query() {
+			if (!get_option('mdpick_custom_sort')) return false;
+			
+			
 			global $wp_query;
+			
+			$querying_standard_posts = is_home() || (is_archive() && !is_post_type_archive());
+			$should_moify_standard_posts = get_option('mdpick_pt_post');
+			
+			$querying_custom_posts = is_post_type_archive();
+			$should_modify_custom_posts = get_option('mdpick_pt_'.$wp_query->query['post_type']);
+			
+			$modify_this_query = ($querying_standard_posts && $should_moify_standard_posts) 
+															|| ($querying_custom_posts && $should_modify_custom_posts);
+			
+			return $modify_this_query;
+			
+			/*
+			$querying_standard_posts = ( get_option('mdpick_pt_post') && 
+																	!array_key_exists('post_type',$wp_query->query)  && 
+																	!array_key_exists('page',$wp_query->query) );
+
+			*/
+			echo ($modify_this_query) ? "YES" : "NO";
+			echo "<pre>". print_r($wp_query, true). "</pre>";
+			return false;														
+			// TODO fix!
+			
 			$should_apply = get_option('mdpick_pt_'.$wp_query->query['post_type']) && is_archive() && !is_admin();
 			return $should_apply;
 		}
@@ -168,17 +231,27 @@ class mdpick {
 			unset($this->all_post_types['attachment']);
 		}
 
+
+		/*
+			template helpers
+		*/
+		
+		function the_date() {
+			
+		}
 }
 	
 $mdpick = new mdpick();
 
 
 function mdp_next_query() {
-	
+	global $mdpick;
+	$mdpick->force_customize_next_query = true;
 }
 
 function the_mdp_date() {
-	
+	global $mdpick;
+	$mdpick->the_date();
 }
 endif; // class_exists check
 
