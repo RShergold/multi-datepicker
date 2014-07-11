@@ -135,7 +135,7 @@ class mdpick {
 		create interface for admin section
 	*/
 	function add_settings_menu_item() {
-		add_options_page('My Options', 'Multi DatePicker', 'manage_options', 'multi-datepicker', array($this, 'show_settings_page') );
+		add_options_page('Multi DatePicker Settings', 'Multi DatePicker', 'manage_options', 'multi-datepicker', array($this, 'show_settings_page') );
 	}
 	
 	function show_settings_page() {
@@ -211,10 +211,10 @@ class mdpick {
 		// show_meta_box helper
 		function get_post_dates($post_id){
 			global $wpdb;
-			$dates = $wpdb->get_results("SELECT date FROM wp_mdp_multi_dates WHERE post_id = $post_id", OBJECT_K);
+			$dates = $wpdb->get_results("SELECT mdpicker_date FROM $this->table_name WHERE post_id = $post_id", OBJECT_K);
 			$timestamps = [];
 			foreach($dates as $date) 
-				$timestamps[] = strtotime($date->date)*1000;
+				$timestamps[] = strtotime($date->mdpicker_date)*1000;
 			return implode(',',$timestamps);
 		}
 
@@ -246,6 +246,7 @@ function the_mdp_date() {
 	global $mdpick;
 	$mdpick->the_date();
 }
+
 endif; // class_exists check
 
 
