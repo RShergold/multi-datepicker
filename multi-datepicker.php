@@ -229,9 +229,18 @@ class mdpick {
 			template helpers
 		*/
 		
-		function the_date() {
+		function get_the_date() {
 			$post = get_post();
-			return ($post->mdpicker_date) ? $post->mdpicker_date : "TODO";
+			if ($post->mdpicker_date) return $post->mdpicker_date;
+			global $wpdb;
+			$sql = "SELECT mdpicker_date
+							FROM $this->table_name
+							WHERE post_id = $post->ID
+							AND $this->table_name.mdpicker_date >= CURDATE()
+							ORDER BY $this->table_name.mdpicker_date
+							LIMIT 1";
+			$next_date = $wpdb->get_var($sql);
+			return $next_date;
 		}
 }
 	
@@ -245,8 +254,7 @@ function mdp_next_query() {
 
 function the_mdp_date() {
 	global $mdpick;
-
-	echo $mdpick->the_date();
+	echo $mdpick->get_the_date();
 }
 
 endif; // class_exists check
