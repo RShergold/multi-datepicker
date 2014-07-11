@@ -4,13 +4,10 @@ jQuery(document).ready(function() {
 	
 	
 	dates = jQuery('#mdpicker_dates').val().split(',');
-	for(var i=dates.length; i--;) {
-		dates[i] = +dates[i];
-		if (!dates[i]) dates.splice(i,1);
-	}
+	for(var i=dates.length; i--;) if (!dates[i]) dates.splice(i,1);
 	
 	jQuery('#mdp-datepicker').datepicker({
-		dateFormat: '@',
+		dateFormat: 'm/d/yy',
 		numberOfMonths: [2,3],
 		showButtonPanel: false,
 		beforeShowDay: is_day_selected,
@@ -18,17 +15,18 @@ jQuery(document).ready(function() {
 	});
 	
 	
-	function select_day(dateEpoch) {
-		var i = jQuery.inArray(+dateEpoch,dates);
+	function select_day(date_string) {
+		var i = jQuery.inArray(date_string,dates);
 		if (~i)
 			dates.splice(i, 1);
 		else
-			dates.push(+dateEpoch);
+			dates.push(date_string);
 		jQuery('#mdpicker_dates').val(dates.join());
 	}
 	
 	function is_day_selected(date) {
-		return ( ~jQuery.inArray(date.getTime(),dates) ) ? [true, 'mdp-highlight'] : [true];
+		date_string = (date.getMonth()+1)+'/'+date.getDate()+'/'+date.getFullYear();
+		return ( ~jQuery.inArray(date_string,dates) ) ? [true, 'mdp-highlight'] : [true];
 	}
 	
 });

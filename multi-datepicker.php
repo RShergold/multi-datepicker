@@ -177,7 +177,7 @@ class mdpick {
 	function show_meta_box( $post ) {
 		wp_enqueue_script('jquery-ui-datepicker');
 		wp_enqueue_style('jquery-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/smoothness/jquery-ui.css');
-		wp_enqueue_script( 'mdpick', plugins_url('js/mdp_metaBox.js', __FILE__), array(), '1.0.1', true );
+		wp_enqueue_script( 'mdpick', plugins_url('js/mdp_metaBox.js', __FILE__), array(), '1.0.9', true );
 		include('html/mdp_metaBox.php');
 		
 	}
@@ -198,10 +198,10 @@ class mdpick {
 		$wpdb->delete($this->table_name,array('post_id' => $post_id));
 		
 		//replace with new
-		foreach (explode(',',$_POST['mdpicker_dates']) as $timestamp) {
+		foreach (explode(',',$_POST['mdpicker_dates']) as $date) {
 			$wpdb->insert($this->table_name, array(
 				'post_id' => $post_id,
-				'mdpicker_date' => date( 'Y-m-d H:i:s', $timestamp/1000 )
+				'mdpicker_date' => date( 'Y-m-d H:i:s', strtotime($date) )
 			));
 		}
 		
@@ -212,10 +212,10 @@ class mdpick {
 		function get_post_dates($post_id){
 			global $wpdb;
 			$dates = $wpdb->get_results("SELECT mdpicker_date FROM $this->table_name WHERE post_id = $post_id", OBJECT_K);
-			$timestamps = [];
+			$date_strings = [];
 			foreach($dates as $date) 
-				$timestamps[] = strtotime($date->mdpicker_date)*1000;
-			return implode(',',$timestamps);
+				$date_strings[] = date('n/j/Y',strtotime($date->mdpicker_date));
+			return implode(',',$date_strings);
 		}
 
 		//general helper, gets the names of all post types, used by other functions later
@@ -230,7 +230,8 @@ class mdpick {
 		*/
 		
 		function the_date() {
-			
+			$post = get_post();
+			return ($post->mdpicker_date) ? $post->mdpicker_date : "TODO";
 		}
 }
 	
@@ -244,7 +245,8 @@ function mdp_next_query() {
 
 function the_mdp_date() {
 	global $mdpick;
-	$mdpick->the_date();
+
+	echo $mdpick->the_date();
 }
 
 endif; // class_exists check
